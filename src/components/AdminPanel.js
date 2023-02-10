@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getUser } from "../../util/API";
+import { getUser } from "../util/API";
 import {
   TextField,
   CircularProgress,
@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import "./AdminPanel.css";
-import { ITEMS_PER_PAGE } from "../../util/Constants";
+import { ITEMS_PER_PAGE } from "../util/Constants";
 import Pagination from "./Pagination";
 import Users from "./Users";
 import { useSnackbar } from "notistack";

@@ -3,7 +3,7 @@ import FirstPageIcon from "@mui/icons-material/FirstPage";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import LastPageIcon from "@mui/icons-material/LastPage";
-import { ITEMS_PER_PAGE } from "../../util/Constants";
+import { ITEMS_PER_PAGE } from "../util/Constants";
 import { Box, IconButton } from "@mui/material";
 import "./Pagination.css";
 

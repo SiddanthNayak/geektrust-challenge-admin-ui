@@ -1,5 +1,5 @@
-import './App.css';
-import AdminPanel from './components/admin-panel/AdminPanel';
+import "./App.css";
+import AdminPanel from "./components/AdminPanel";
 
 function App() {
   return (
