@@ -7,59 +7,46 @@ import {
   InputAdornment,
   Box,
   Button,
-  Pagination,
   Stack,
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
 import "./AdminPanel.css";
 import { ITEMS_PER_PAGE } from "../../util/Constants";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditModal from "./EditModal";
+import Pagination from "./Pagination";
+import Users from "./Users";
+import { useSnackbar } from "notistack";
 
 const AdminPanel = () => {
+  const { enqueueSnackbar } = useSnackbar();
   const [userList, setUserList] = useState([]);
-  const [tempUserList, setTempUserList] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [isSelectAll, setIsSelectAll] = useState(false);
-  const [open, setOpen] = useState(false);
-  const [editUser, setEditUser] = useState();
+  const [searchTerm, setSearchTerm] = useState();
 
   const getUsersList = () => {
     setIsLoading(true);
     getUser()
       .then((response) => {
-        setTempUserList(response);
         setUserList(response);
         setIsLoading(false);
       })
       .catch((error) => {
         setIsLoading(false);
-        console.log(error);
+        enqueueSnackbar("Something went wrong. Check network", {
+          variant: "error",
+        });
       });
-  };
-
-  const handleOpen = (userId) => {
-    setEditUser(userList.find((user) => user.id === userId));
-    setOpen(true);
-  };
-
-  const handleClose = () => setOpen(false);
-
-  const capitalizeString = (string) => {
-    return string.charAt(0).toUpperCase() + string.slice(1);
   };
 
   const selectAll = (event) => {
     const { checked } = event.target;
     setIsSelectAll(checked);
-    userList
+    filteredUsers
       .slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
       .map((item) => {
         return (item.isSelected = checked);
       });
-    setUserList([...userList]);
   };
 
   const selectUser = (event) => {
@@ -71,30 +58,41 @@ const AdminPanel = () => {
   };
 
   const searchUser = (search) => {
-    const searchText = search.toLowerCase();
-    const searchResult = tempUserList.filter((user) => {
-      return (
-        user.name.toLowerCase().search(searchText) !== -1 ||
-        user.email.toLowerCase().search(searchText) !== -1 ||
-        user.role.toLowerCase().search(searchText) !== -1
-      );
-    });
-    setUserList(searchResult);
+    if (search) {
+      const searchText = search.toLowerCase();
+      const searchResult = userList.filter((user) => {
+        return (
+          user.name.toLowerCase().search(searchText) !== -1 ||
+          user.email.toLowerCase().search(searchText) !== -1 ||
+          user.role.toLowerCase().search(searchText) !== -1
+        );
+      });
+      return searchResult;
+    } else {
+      return userList;
+    }
   };
 
-  const onPageChange = (event, value) => {
-    setPage(value);
+  const onPageChange = (pageNo) => {
+    setPage(pageNo);
   };
 
   const handleDelete = (userId) => {
     if (userId) {
       const newUserList = userList.filter((user) => user.id !== userId);
       setUserList(newUserList);
-      setTempUserList(newUserList);
+      enqueueSnackbar("Successfully deleted user", { variant: "success" });
     } else {
       const newUserList = userList.filter((user) => user.isSelected !== true);
+      newUserList.length === userList.length
+        ? enqueueSnackbar("No Users have been selected", {
+            variant: "error",
+          })
+        : enqueueSnackbar("Successfully deleted selected users", {
+            variant: "success",
+          });
+
       setUserList(newUserList);
-      setTempUserList(newUserList);
     }
     if (isSelectAll) {
       setIsSelectAll(!isSelectAll);
@@ -108,8 +106,12 @@ const AdminPanel = () => {
     setUserList(newUserList);
   };
 
+  const filteredUsers = searchUser(searchTerm);
+
   useEffect(() => {
     getUsersList();
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -125,7 +127,7 @@ const AdminPanel = () => {
             </InputAdornment>
           ),
         }}
-        onChange={(e) => searchUser(e.target.value)}
+        onChange={(e) => setSearchTerm(e.target.value)}
         placeholder="Search by name, email or role"
         name="search"
       />
@@ -134,7 +136,7 @@ const AdminPanel = () => {
           <CircularProgress />
           <h4>Loading Users...</h4>
         </Box>
-      ) : userList.length ? (
+      ) : filteredUsers.length ? (
         <Box>
           <table className="table">
             <thead>
@@ -154,50 +156,21 @@ const AdminPanel = () => {
               </tr>
             </thead>
             <tbody>
-              {userList
+              {filteredUsers
                 .slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE)
                 .map((user) => {
                   return (
-                    <tr key={user.id}>
-                      <td>
-                        <input
-                          type="checkbox"
-                          checked={user?.isSelected || false}
-                          value={user.id}
-                          onChange={(event) => selectUser(event)}
-                        />
-                      </td>
-                      <td>{user.name}</td>
-                      <td>{user.email}</td>
-                      <td>{capitalizeString(user.role)}</td>
-                      <td>
-                        <Stack direction="row" spacing={2}>
-                          <EditIcon
-                            onClick={() => handleOpen(user.id)}
-                            sx={{ cursor: "pointer" }}
-                            color="primary"
-                          />
-                          <DeleteIcon
-                            onClick={() => handleDelete(user.id)}
-                            sx={{ cursor: "pointer" }}
-                            color="error"
-                          />
-                        </Stack>
-                      </td>
-                    </tr>
+                    <Users
+                      key={user.id}
+                      user={user}
+                      hanldeSelect={(event) => selectUser(event)}
+                      deleteHandler={(id) => handleDelete(id)}
+                      editHandler={(user) => handleEdit(user)}
+                    ></Users>
                   );
                 })}
             </tbody>
           </table>
-          {open ? (
-            <EditModal
-              open={open}
-              user={editUser}
-              onClose={() => handleClose()}
-              handleEdit={(user) => handleEdit(user)}
-            />
-          ) : null}
-
           <Stack
             marginY="1rem"
             direction="row"
@@ -212,13 +185,9 @@ const AdminPanel = () => {
               Delete Selected
             </Button>
             <Pagination
-              color="primary"
-              sx={{ margin: "auto" }}
-              page={page}
-              onChange={onPageChange}
-              count={Math.ceil(userList.length / ITEMS_PER_PAGE)}
-              showFirstButton
-              showLastButton
+              users={filteredUsers}
+              hanldePagination={(pageNo) => onPageChange(pageNo)}
+              pageNo={page}
             />
           </Stack>
         </Box>
